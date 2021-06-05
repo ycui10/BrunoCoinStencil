@@ -49,7 +49,7 @@ import (
 // n.Chain.ChkChainsUTXO(...)
 func (n *Node) ChkBlk(b *block.Block) bool {
 
-	if n == nil || b == nil || b.Transactions ==nil || len (b.Transactions) == 0 {
+	if n == nil || b == nil || len (b.Transactions) == 0 {
 		return false
 	}
 
@@ -87,16 +87,9 @@ func (n *Node) ChkBlk(b *block.Block) bool {
 	}
 	hash_bool = b.SatisfiesPOW(b.Hdr.DiffTarg)
 
-	for _, transaction := range(b.Transactions) {
-		if n.ChkTx(transaction) == false {
-			return false
-		}
-	}
-
 	if utxoAndDoublespend_bool == true && blockSize_bool == true && hash_bool == true && firstTransaction_bool == true {
 		return true
 	}
-
 
 	return false
 }
@@ -136,7 +129,7 @@ func (n *Node) ChkBlk(b *block.Block) bool {
 func (n *Node) ChkTx(t *tx.Transaction) bool {
 
 
-	if n == nil || t == nil || t.Inputs == nil || t.Outputs == nil || len(t.Inputs) <=0 || len(t.Outputs) <=0 {
+	if n == nil || t == nil || t.Inputs == nil || t.Outputs == nil || len(t.Outputs) <=0 {
 		return false
 	}
 
@@ -152,7 +145,6 @@ func (n *Node) ChkTx(t *tx.Transaction) bool {
 		if n.Chain.GetUTXO(currInput).IsUnlckd(currInput.UnlockingScript) {
 			return false
 		}
-		
 	}
 
 	if t.Sz() > n.Conf.MxBlkSz {
