@@ -71,6 +71,15 @@ func (n *Node) ChkBlk(b *block.Block) bool {
 				return false
 			}
 		}
+		outputs := b.Transactions[i].Outputs
+		if len(outputs) == 0{
+			return false
+		}
+		for i:= 0; i<len(outputs); i ++ {
+			if outputs[i].Amount == 0 {
+				return false
+			}
+		}
 	}
 	utxoAndDoublespend_bool = n.Chain.ChkChainsUTXO(b.Transactions, b.Hdr.PrvBlkHsh)
 	if b.Sz() <= n.Conf.MxBlkSz {

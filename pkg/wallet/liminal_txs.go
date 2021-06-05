@@ -103,6 +103,9 @@ func (l *LiminalTxs) ChkTxs(txs []*tx.Transaction) ([]*tx.Transaction, []*tx.Tra
 // l.mutex.Unlock()
 // l.TxQ.Add(...)
 func (l *LiminalTxs) Add(t *tx.Transaction) {
+	if l == nil || t == nil {
+		return
+	}
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 	l.TxQ.Add(0,t)

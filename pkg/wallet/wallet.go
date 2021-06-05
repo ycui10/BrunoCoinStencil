@@ -200,7 +200,8 @@ func (w *Wallet) HndlTxReq(txR *TxReq) {
 	var transactionOutput []*proto.TransactionOutput
 
 	amtNeeded := txR.Amt + txR.Fee
-	utxoinfo, change, enough_bool := w.Chain.GetUTXOForAmt(amtNeeded, hex.EncodeToString(w.Id.GetPublicKeyBytes()))
+	wallet_pubKey := hex.EncodeToString(w.Id.GetPublicKeyBytes())
+	utxoinfo, change, enough_bool := w.Chain.GetUTXOForAmt(amtNeeded, wallet_pubKey)
 
 	if enough_bool == false {
 		return
@@ -215,7 +216,7 @@ func (w *Wallet) HndlTxReq(txR *TxReq) {
 	}
 	transactionOutput = append(transactionOutput, proto.NewTxOutpt(txR.Amt, hex.EncodeToString(txR.PubK)))
 	if change > 0 {
-		transactionOutput = append(transactionOutput, proto.NewTxOutpt(change, hex.EncodeToString(w.Id.GetPublicKeyBytes())))
+		transactionOutput = append(transactionOutput, proto.NewTxOutpt(change, wallet_pubKey))
 	}
 	protoTransaction := proto.NewTx(w.Conf.TxVer, transactionInput, transactionOutput, w.Conf.DefLckTm)
 	transaction := tx.Deserialize(protoTransaction)

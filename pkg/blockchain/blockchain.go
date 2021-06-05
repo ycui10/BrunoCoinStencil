@@ -369,7 +369,7 @@ func (bc *Blockchain) GetUTXOForAmt(amt uint32, pubKey string) ([]*UTXOInfo, uin
 	utxo := bc.LastBlock.utxo
 
 	if amt <= 0 {
-		return utxoinfo, 0, true
+		return nil, 0, true
 	}
 
 	for key, value := range utxo{
