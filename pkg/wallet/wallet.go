@@ -5,6 +5,10 @@ import (
 	"BrunoCoin/pkg/block/tx"
 	"BrunoCoin/pkg/blockchain"
 	"BrunoCoin/pkg/id"
+	"BrunoCoin/pkg/proto"
+	"BrunoCoin/pkg/utils"
+	"encoding/hex"
+	"fmt"
 	"sync"
 )
 
@@ -106,7 +110,7 @@ func New(c *Config, id id.ID, chain *blockchain.Blockchain) *Wallet {
 // be incrementing the priorities, removing duplicates,
 // and returning which ones are "old"
 // 2. Resend out "old" liminal transactions with the
-// lock time incremented (in order to give the transaction
+//  incremented (in order to give the transaction
 // a different hash since lock time essentially does nothing)
 // Tip 1: A formatted debugging message saying which
 // address created the transaction and which transaction
@@ -122,7 +126,22 @@ func New(c *Config, id id.ID, chain *blockchain.Blockchain) *Wallet {
 // t.NameTag()
 // w.SendTx <- ...
 func (w *Wallet) HndlBlk(b *block.Block) {
-	return
+	if w ==nil || b == nil || b.Transactions == nil {
+		return
+	}
+	abovePri, _ := w.LmnlTxs.ChkTxs(b.Transactions)
+	if abovePri == nil {
+		return
+	}
+	for i:=0; i<len(abovePri); i++ {
+		trans := abovePri[i]
+		trans.LockTime += 1
+		w.LmnlTxs.Add(trans)
+		w.SendTx <- trans
+		fmt.Println("Address that created the transaction: " + utils.FmtAddr(w.Addr))
+		fmt.Println("Transaction: " + trans.NameTag())
+	}
+
 }
 
 // HndlTxReq (HandleTransactionRequest) attempts to
@@ -173,5 +192,34 @@ func (w *Wallet) HndlBlk(b *block.Block) {
 // proto.NewTxInpt(...)
 // proto.NewTxOutpt(...)
 func (w *Wallet) HndlTxReq(txR *TxReq) {
-	return
+
+	if w == nil || txR == nil || txR.Amt == 0 {
+		return
+	}
+	var transactionInput []*proto.TransactionInput
+	var transactionOutput []*proto.TransactionOutput
+
+	amtNeeded := txR.Amt + txR.Fee
+	utxoinfo, change, enough_bool := w.Chain.GetUTXOForAmt(amtNeeded, hex.EncodeToString(w.Id.GetPublicKeyBytes()))
+
+	if enough_bool == false {
+		return
+	}
+
+	for _, value := range(utxoinfo) {
+		signature, error := value.UTXO.MkSig(w.Id)
+		if error == nil {
+			transactionInput = append(transactionInput, proto.NewTxInpt(value.TxHsh, value.OutIdx, signature, value.Amt))
+
+		}
+	}
+	transactionOutput = append(transactionOutput, proto.NewTxOutpt(txR.Amt, hex.EncodeToString(txR.PubK)))
+	if change > 0 {
+		transactionOutput = append(transactionOutput, proto.NewTxOutpt(change, hex.EncodeToString(w.Id.GetPublicKeyBytes())))
+	}
+	protoTransaction := proto.NewTx(w.Conf.TxVer, transactionInput, transactionOutput, w.Conf.DefLckTm)
+	transaction := tx.Deserialize(protoTransaction)
+	w.LmnlTxs.Add(transaction)
+	w.SendTx <- transaction
+
 }

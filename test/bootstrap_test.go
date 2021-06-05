@@ -199,6 +199,7 @@ func TestBootstrapCompetingChains(t *testing.T) {
 	time.Sleep(time.Second * 5)
 	nodes[1].SendTx(200, 50, nodes[2].Id.GetPublicKeyBytes())
 	time.Sleep(time.Second * 5)
+
 	// Node 1 will be behind by a block
 	nodes[1].PauseNetwork()
 	nodes[0].SendTx(200, 50, nodes[2].Id.GetPublicKeyBytes())

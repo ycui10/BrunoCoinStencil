@@ -48,6 +48,40 @@ import (
 // b.Sz()
 // n.Chain.ChkChainsUTXO(...)
 func (n *Node) ChkBlk(b *block.Block) bool {
+
+	if n == nil || b == nil || len (b.Transactions) == 0 {
+		return false
+	}
+
+
+	var utxoAndDoublespend_bool bool
+	var blockSize_bool bool
+	var hash_bool bool
+	var firstTransaction_bool bool
+
+	for i := 0; i< len(b.Transactions); i++ {
+		if b.Transactions[i].IsCoinbase() == true {
+			if i != 0 {
+				return false
+			} else {
+				firstTransaction_bool = true
+			}
+		} else {
+			if i == 0 {
+				return false
+			}
+		}
+	}
+	utxoAndDoublespend_bool = n.Chain.ChkChainsUTXO(b.Transactions, b.Hdr.PrvBlkHsh)
+	if b.Sz() <= n.Conf.MxBlkSz {
+		blockSize_bool = true
+	}
+	hash_bool = b.SatisfiesPOW(b.Hdr.DiffTarg)
+
+	if utxoAndDoublespend_bool == true && blockSize_bool == true && hash_bool == true && firstTransaction_bool == true {
+		return true
+	}
+
 	return false
 }
 
@@ -84,5 +118,35 @@ func (n *Node) ChkBlk(b *block.Block) bool {
 // t.SumInputs()
 // t.SumOutputs()
 func (n *Node) ChkTx(t *tx.Transaction) bool {
+
+
+	if n == nil || t == nil || t.Inputs == nil || t.Outputs == nil || len(t.Outputs) <=0 {
+		return false
+	}
+
+	if t.SumInputs() <= t.SumOutputs() {
+		return false
+	}
+
+	for i:=0 ; i< len (t.Inputs) ; i ++ {
+		currInput := t.Inputs[i]
+		if n.Chain.IsInvalidInput(currInput) {
+			return false
+		}
+		if n.Chain.GetUTXO(currInput).IsUnlckd(currInput.UnlockingScript) {
+			return false
+		}
+	}
+
+	if t.Sz() > n.Conf.MxBlkSz {
+		return false
+	}
+	return true
+
+
+
+
+
+
 	return false
 }

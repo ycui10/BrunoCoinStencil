@@ -78,7 +78,14 @@ func (tp *TxPool) PriMet() bool {
 // let t be a transaction object
 // t.Sz()
 func CalcPri(t *tx.Transaction) uint32 {
-	return 0
+	if t == nil {
+		return 0
+	}
+	pri :=(t.SumInputs() - t.SumOutputs()) * 100 / t.Sz()
+	if pri == 0 {
+		return 1
+	}
+	return pri
 }
 
 
@@ -103,7 +110,22 @@ func CalcPri(t *tx.Transaction) uint32 {
 // tp.mutex.Lock()
 // tp.mutex.Unlock()
 func (tp *TxPool) Add(t *tx.Transaction) {
-	return
+
+	tp.mutex.Lock()
+	defer tp.mutex.Unlock()
+	if tp == nil || t == nil {
+		return
+	}
+	if tp.Cap <= tp.Ct.Load() {
+		return
+	}
+	pri := CalcPri(t)
+	tp.CurPri.Add(pri)
+
+	//tp.mutex.Lock()
+	tp.TxQ.Add(pri,t)
+	//tp.mutex.Unlock()
+	tp.Ct.Inc()
 }
 
 
@@ -124,5 +146,26 @@ func (tp *TxPool) Add(t *tx.Transaction) {
 // tp.mutex.Unlock()
 // tp.TxQ.Rmv(...)
 func (tp *TxPool) ChkTxs(remover []*tx.Transaction) {
-	return
+	if tp == nil {
+		return
+	}
+	if remover == nil{
+		return
+	}
+
+	tp.mutex.Lock()
+	defer tp.mutex.Unlock()
+
+	rmvd := tp.TxQ.Rmv(remover)
+	var length uint32 = uint32(len(rmvd))
+	tp.Ct.Sub(length)
+
+	var accPri uint32
+	for i:=0; i<len(rmvd); i++ {
+		accPri += CalcPri(rmvd[i])
+	}
+
+	tp.CurPri.Sub(accPri)
+
+	//tp.mutex.Unlock()
 }

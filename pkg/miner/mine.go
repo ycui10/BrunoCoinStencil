@@ -3,8 +3,11 @@ package miner
 import (
 	"BrunoCoin/pkg/block"
 	"BrunoCoin/pkg/block/tx"
+	"BrunoCoin/pkg/proto"
 	"BrunoCoin/pkg/utils"
 	"context"
+	"encoding/hex"
+	"math"
 )
 
 /*
@@ -105,6 +108,45 @@ func (m *Miner) DifTrg() string {
 // t.SumInputs()
 // t.SumOutputs()
 func (m *Miner) GenCBTx(txs []*tx.Transaction) *tx.Transaction {
-	return nil
+	if m == nil || txs == nil || len(txs) == 0 {
+		return nil
+	}
+	var inputs uint32
+	var outputs uint32
+	var fees uint32
+
+	inputs = 0
+	outputs = 0
+
+	for _, transaction:= range (txs) {
+		if transaction == nil {
+			return nil
+		}
+		inputs = inputs + transaction.SumInputs()
+		outputs = outputs + transaction.SumOutputs()
+	}
+
+	fees = inputs - outputs
+
+	numOfHlavings := m.ChnLen.Load() / m.Conf.SubsdyHlvRt
+
+	var mint uint32 = 0
+	if numOfHlavings <= m.Conf.MxHlvgs {
+		mint = uint32(m.Conf.InitSubsdy / uint32(math.Pow(2, float64(numOfHlavings ))))
+	}
+
+	amt := mint +fees
+	publicKey := hex.EncodeToString(m.Id.GetPublicKeyBytes())
+	protoTransactionOut := proto.NewTxOutpt(amt, publicKey)
+	transactionOut := make([]*proto.TransactionOutput, 0)
+	transactionOut = append (transactionOut, protoTransactionOut)
+	protoTransaction := proto.NewTx(m.Conf.Ver, nil, transactionOut, m.Conf.DefLckTm)
+
+	transaction := tx.Deserialize(protoTransaction)
+
+	return transaction
+
+
+
 }
 

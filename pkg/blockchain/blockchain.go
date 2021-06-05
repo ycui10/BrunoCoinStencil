@@ -6,6 +6,7 @@ import (
 	"BrunoCoin/pkg/block/tx/txi"
 	"BrunoCoin/pkg/block/tx/txo"
 	"BrunoCoin/pkg/proto"
+	"BrunoCoin/pkg/utils"
 	"fmt"
 	"strings"
 	"sync"
@@ -96,7 +97,48 @@ func (bc *Blockchain) SetAddr(a string) {
 // b.NameTag()
 // txo.MkTXOLoc(...)
 func (bc *Blockchain) Add(b *block.Block) {
-	return
+	bc.Lock()
+	defer bc.Unlock()
+
+	prevHash := b.Hdr.PrvBlkHsh
+	prevBlock := bc.blocks[prevHash]
+	prevBlockUtxo := prevBlock.utxo
+	usedUtxo := make (map[string]*txo.TransactionOutput)
+
+	for key, value := range(prevBlockUtxo) {
+		usedUtxo[key] = value
+	}
+
+	for _, transaction := range(b.Transactions) {
+		for _, input := range(transaction.Inputs) {
+			delete(usedUtxo, txo.MkTXOLoc(input.TransactionHash, input.OutputIndex))
+		}
+		for i, output := range(transaction.Outputs){
+			usedUtxo[txo.MkTXOLoc(transaction.Hash(), uint32(i))] = output
+		}
+
+	}
+
+	var newNode *BlockchainNode
+	newNode = &BlockchainNode{
+		Block: b,
+		PrevNode: prevBlock,
+		utxo: usedUtxo,
+		depth: prevBlock.depth+1,
+	}
+
+	bc.blocks[b.Hash()] = newNode
+	bc.LastBlock = newNode
+	utils.FmtAddr("Successfully added block: " +b.NameTag())
+	//handle competing chains
+	//if bc.LastBlock.depth < newNode.depth {
+	//	bc.LastBlock = newNode
+	//} else if bc.LastBlock.depth == newNode.depth {
+	//	if b.Hash() < bc.LastBlock.Hash() {
+	//		bc.LastBlock = newNode
+	//	}
+	//}
+
 }
 
 // Length returns the count of blocks on the
@@ -318,7 +360,41 @@ type UTXOInfo struct {
 // bc.Lock()
 // bc.Unlock()
 func (bc *Blockchain) GetUTXOForAmt(amt uint32, pubKey string) ([]*UTXOInfo, uint32, bool) {
-	return nil, 0, false
+	bc.Lock()
+	defer bc.Unlock()
+
+	var totalutxo uint32
+	totalutxo = 0
+	utxoinfo := make([]*UTXOInfo, 0)
+
+
+	utxo := bc.LastBlock.utxo
+
+	for key, value := range utxo{
+		if value.LockingScript == pubKey && value.Liminal == false {
+			hash, index := txo.PrsTXOLoc(key)
+			info := UTXOInfo{
+				TxHsh: hash,
+				OutIdx: index,
+				UTXO: value,
+				Amt: value.Amount,
+			}
+			totalutxo += value.Amount
+			utxoinfo = append(utxoinfo, &info)
+			value.Liminal = true
+			if totalutxo >= amt{break}
+
+		}
+	}
+
+	if totalutxo < amt {
+		return nil, 0, false
+	} else {
+		return utxoinfo, totalutxo-amt, true
+	}
+
+
+
 }
 
 // GenesisBlock creates the genesis block from
