@@ -126,6 +126,7 @@ func (tp *TxPool) Add(t *tx.Transaction) {
 	tp.TxQ.Add(pri,t)
 	//tp.mutex.Unlock()
 	tp.Ct.Inc()
+
 }
 
 

@@ -130,12 +130,14 @@ func (m *Miner) GenCBTx(txs []*tx.Transaction) *tx.Transaction {
 
 	numOfHlavings := m.ChnLen.Load() / m.Conf.SubsdyHlvRt
 
-	var mint uint32 = 0
-	if numOfHlavings <= m.Conf.MxHlvgs {
-		mint = uint32(m.Conf.InitSubsdy / uint32(math.Pow(2, float64(numOfHlavings ))))
+	var mintingRewards uint32 = 0
+	if numOfHlavings > m.Conf.MxHlvgs {
+		numOfHlavings = m.Conf.MxHlvgs
 	}
 
-	amt := mint +fees
+	mintingRewards = uint32(m.Conf.InitSubsdy / uint32(math.Pow(2, float64(numOfHlavings ))))
+	amt := mintingRewards +fees
+	
 	publicKey := hex.EncodeToString(m.Id.GetPublicKeyBytes())
 	protoTransactionOut := proto.NewTxOutpt(amt, publicKey)
 	transactionOut := make([]*proto.TransactionOutput, 0)
