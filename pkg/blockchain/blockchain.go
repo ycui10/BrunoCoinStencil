@@ -97,12 +97,21 @@ func (bc *Blockchain) SetAddr(a string) {
 // b.NameTag()
 // txo.MkTXOLoc(...)
 func (bc *Blockchain) Add(b *block.Block) {
+
+	if b == nil {
+		return
+	}
+
 	bc.Lock()
 	defer bc.Unlock()
 
-	prevHash := b.Hdr.PrvBlkHsh
-	prevBlock := bc.blocks[prevHash]
+
+	//prevHash := b.Hdr.PrvBlkHsh
+	//prevBlock := bc.blocks[prevHash]
+	//prevBlockUtxo := prevBlock.utxo
+	prevBlock := bc.LastBlock
 	prevBlockUtxo := prevBlock.utxo
+
 	usedUtxo := make (map[string]*txo.TransactionOutput)
 
 	for key, value := range(prevBlockUtxo) {
