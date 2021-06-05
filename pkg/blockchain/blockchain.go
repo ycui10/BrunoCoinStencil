@@ -366,9 +366,11 @@ func (bc *Blockchain) GetUTXOForAmt(amt uint32, pubKey string) ([]*UTXOInfo, uin
 	var totalutxo uint32
 	totalutxo = 0
 	utxoinfo := make([]*UTXOInfo, 0)
-
-
 	utxo := bc.LastBlock.utxo
+
+	if amt <= 0 {
+		return utxoinfo, 0, true
+	}
 
 	for key, value := range utxo{
 		if value.LockingScript == pubKey && value.Liminal == false {
@@ -386,6 +388,7 @@ func (bc *Blockchain) GetUTXOForAmt(amt uint32, pubKey string) ([]*UTXOInfo, uin
 
 		}
 	}
+
 
 	if totalutxo < amt {
 		return nil, 0, false

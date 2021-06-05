@@ -161,6 +161,8 @@ func (tp *TxPool) ChkTxs(remover []*tx.Transaction) {
 	tp.Ct.Sub(length)
 
 	var accPri uint32
+	accPri = 0
+
 	for i:=0; i<len(rmvd); i++ {
 		accPri += CalcPri(rmvd[i])
 	}
