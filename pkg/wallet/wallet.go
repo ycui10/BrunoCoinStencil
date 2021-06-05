@@ -6,7 +6,9 @@ import (
 	"BrunoCoin/pkg/blockchain"
 	"BrunoCoin/pkg/id"
 	"BrunoCoin/pkg/proto"
+	"BrunoCoin/pkg/utils"
 	"encoding/hex"
+	"fmt"
 	"sync"
 )
 
@@ -127,25 +129,17 @@ func (w *Wallet) HndlBlk(b *block.Block) {
 	if w ==nil || b == nil || b.Transactions == nil {
 		return
 	}
-	//abovePri, _ := w.LmnlTxs.ChkTxs(b.Transactions)
-	//if abovePri == nil {
-	//	return
-	//}
-	//for i:=0; i<len(abovePri); i++ {
-	//	trans := abovePri[i]
-	//	trans.LockTime += 1
-	//	w.LmnlTxs.Add(trans)
-	//	w.SendTx <- trans
-	//	fmt.Println("Address that created the transaction: " + utils.FmtAddr(w.Addr))
-	//	fmt.Println("Transaction: " + trans.NameTag())
-	//}
-
-	_, dups := w.LmnlTxs.ChkTxs(b.Transactions)
-	for _, trans := range(dups) {
-		if trans !=nil {
-			w.LmnlTxs.Add(trans)
-			w.SendTx <- trans
-		}
+	abovePri, _ := w.LmnlTxs.ChkTxs(b.Transactions)
+	if abovePri == nil {
+		return
+	}
+	for i:=0; i<len(abovePri); i++ {
+		trans := abovePri[i]
+		trans.LockTime += 1
+		w.LmnlTxs.Add(trans)
+		w.SendTx <- trans
+		fmt.Println("Address that created the transaction: " + utils.FmtAddr(w.Addr))
+		fmt.Println("Transaction: " + trans.NameTag())
 	}
 
 }
