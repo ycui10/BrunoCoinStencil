@@ -130,14 +130,6 @@ func (bc *Blockchain) Add(b *block.Block) {
 	bc.blocks[b.Hash()] = newNode
 	bc.LastBlock = newNode
 	utils.FmtAddr("Successfully added block: " +b.NameTag())
-	//handle competing chains
-	//if bc.LastBlock.depth < newNode.depth {
-	//	bc.LastBlock = newNode
-	//} else if bc.LastBlock.depth == newNode.depth {
-	//	if b.Hash() < bc.LastBlock.Hash() {
-	//		bc.LastBlock = newNode
-	//	}
-	//}
 
 }
 
@@ -372,19 +364,25 @@ func (bc *Blockchain) GetUTXOForAmt(amt uint32, pubKey string) ([]*UTXOInfo, uin
 		return nil, 0, true
 	}
 
-	for key, value := range utxo{
-		if value.LockingScript == pubKey && value.Liminal == false {
+	for key, value := range (utxo) {
+		if value.Liminal == false && value.LockingScript == pubKey {
 			hash, index := txo.PrsTXOLoc(key)
 			info := UTXOInfo{
-				TxHsh: hash,
-				OutIdx: index,
-				UTXO: value,
-				Amt: value.Amount,
+				hash,
+				index,
+				value,
+				value.Amount,
 			}
 			totalutxo += value.Amount
 			utxoinfo = append(utxoinfo, &info)
-			value.Liminal = true
-			if totalutxo >= amt{break}
+
+
+			if amt < totalutxo {
+				for i:=0; i<len(utxoinfo); i++ {
+					info.UTXO.Liminal=true
+				}
+				break
+			}
 
 		}
 	}
