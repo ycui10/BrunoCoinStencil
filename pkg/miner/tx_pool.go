@@ -158,8 +158,7 @@ func (tp *TxPool) ChkTxs(remover []*tx.Transaction) {
 	defer tp.mutex.Unlock()
 
 	rmvd := tp.TxQ.Rmv(remover)
-	var length uint32 = uint32(len(rmvd))
-	tp.Ct.Sub(length)
+
 
 	var accPri uint32
 	accPri = 0
@@ -169,6 +168,8 @@ func (tp *TxPool) ChkTxs(remover []*tx.Transaction) {
 	}
 
 	tp.CurPri.Sub(accPri)
+	var length uint32 = uint32(len(rmvd))
+	tp.Ct.Sub(length)
 
 	//tp.mutex.Unlock()
 }

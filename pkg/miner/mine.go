@@ -138,8 +138,7 @@ func (m *Miner) GenCBTx(txs []*tx.Transaction) *tx.Transaction {
 	amt := mintingRewards +fees
 	publicKey := hex.EncodeToString(m.Id.GetPublicKeyBytes())
 	protoTransactionOut := proto.NewTxOutpt(amt, publicKey)
-	transactionOut := make([]*proto.TransactionOutput, 0)
-	transactionOut = append (transactionOut, protoTransactionOut)
+	transactionOut := append (make([]*proto.TransactionOutput, 0), protoTransactionOut)
 	protoTransaction := proto.NewTx(m.Conf.Ver, nil, transactionOut, m.Conf.DefLckTm)
 
 	transaction := tx.Deserialize(protoTransaction)

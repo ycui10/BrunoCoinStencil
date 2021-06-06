@@ -128,7 +128,11 @@ func (bc *Blockchain) Add(b *block.Block) {
 	}
 
 	bc.blocks[b.Hash()] = newNode
-	bc.LastBlock = newNode
+
+	if newNode.depth >= bc.LastBlock.depth {
+		bc.LastBlock = newNode
+	}
+
 	utils.FmtAddr("Successfully added block: " +b.NameTag())
 
 }
@@ -375,12 +379,8 @@ func (bc *Blockchain) GetUTXOForAmt(amt uint32, pubKey string) ([]*UTXOInfo, uin
 			}
 			totalutxo += value.Amount
 			utxoinfo = append(utxoinfo, &info)
-
-
-			if amt < totalutxo {
-				for i:=0; i<len(utxoinfo); i++ {
-					info.UTXO.Liminal=true
-				}
+			value.Liminal = true
+			if totalutxo >= amt{
 				break
 			}
 
